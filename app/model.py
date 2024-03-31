@@ -1,8 +1,6 @@
 from datetime import datetime
-
 from flask import url_for
 from flask_login import UserMixin
-
 from . import bcrypt, db, login_manager
 from .exceptions import ValidationError
 
@@ -200,7 +198,6 @@ class Order(db.Model):
         return order_data
 
 
-
 class OrderItem(db.Model):
     __tablename__ = "order_item"
     id = db.Column(db.Integer, primary_key=True)
@@ -232,6 +229,24 @@ class OrderItem(db.Model):
     def update_status(self, new_status):
         self.status = new_status
         db.session.commit()
+
+    def import_data(self, data):
+        try:
+            if 'quantity' in data:
+                self.quantity = data['quantity']
+        except KeyError as e:
+            raise ValidationError('Invalid order item: missing ' + e.args[0])
+        return self
+
+
+    def export_data(self):
+        return {
+            'id': self.id,
+            'order_id': self.order_id,
+            'product_id': self.product_id,
+            'quantity': self.quantity,
+            'total_price': self.get_total_price()
+        }
 
 
 class Cart(db.Model):

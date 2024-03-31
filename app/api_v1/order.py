@@ -99,3 +99,45 @@ def delete_order_item(order_id, item_id):
     order_item = OrderItem.query.filter_by(order_id=order_id, id=item_id).first_or_404()
     order_item.delete()
     return {}, 204
+
+
+@api.route('/order_items', methods=['POST'])
+@json
+def create_order_item():
+    data = request.json
+    order_id = data.get('order_id')
+    product_id = data.get('product_id')
+    quantity = data.get('quantity')
+    order = Order.query.get(order_id)
+    product = Product.query.get(product_id)
+    if order and product:
+        OrderItem.create(order, product, quantity)
+        return {}, 201
+    else:
+        return {"message": "Order or product not found."}, 404
+
+
+@api.route('/order_items/<int:id>', methods=['GET'])
+@json
+def get_order_item(id):
+    order_item = OrderItem.query.get_or_404(id)
+    return order_item.export_data()
+
+
+
+@api.route('/order_items/<int:id>', methods=['PUT'])
+@json
+def update_order_item(id):
+    order_item = OrderItem.query.get_or_404(id)
+    data = request.json
+    order_item.import_data(data)
+    db.session.commit()
+    return {}, 200
+
+
+@api.route('/order_items/<int:id>', methods=['DELETE'])
+@json
+def delete_order_item(id):
+    order_item = OrderItem.query.get_or_404(id)
+    order_item.cancel()
+    return {}, 204
