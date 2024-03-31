@@ -85,24 +85,36 @@ class Product(db.Model):
 
 
     def export_data(self):
-        return {
+        product_data = {
             'self_url': self.get_url(),
             'name': self.name,
             'price': self.price,
             'description': self.description,
             'quantity': self.quantity,
             'created_at': self.created_at,
-            'order_items_url': url_for('api.get_product_order_items', id=self.id,
-                                      _external=True),
-            'cart_url': url_for('api.get_cart_products', id=self.id)
         }
+        product_data['order_items_url'] = url_for('api.get_product_order_items', id=self.id, _external=True)
+        product_data['cart_url'] = url_for('api.get_cart_products', id=self.id, _external=True)
+        if self.order_items:
+            product_data['order_items'] = [item.export_data() for item in self.order_items]
+        if self.cart_items:
+            product_data['cart_items'] = [item.export_data() for item in self.cart_items]
+        return product_data
 
     def import_data(self, data):
         try:
-            self.name = data['name']
+            if 'name' in data:
+                self.name = data['name']
+            if 'price' in data:
+                self.price = data['price']
+            if 'description' in data:
+                self.description = data['description']
+            if 'quantity' in data:
+                self.quantity = data['quantity']
         except KeyError as e:
             raise ValidationError('Invalid product: missing ' + e.args[0])
         return self
+
 
     def reduce_quantity(self, quantity):
         if self.quantity >= quantity:
@@ -114,6 +126,8 @@ class Product(db.Model):
     def increase_quantity(self, quantity):
         self.quantity += quantity
         db.session.commit()
+
+
 
 class Order(db.Model):
     __tablename__ = "order"
