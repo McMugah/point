@@ -31,13 +31,24 @@ class User(db.Model, UserMixin):
         return url_for('api.get_user', id=self.id, _external=True)
 
     def export_data(self):
-        return {
+        user_data = {
             'self_url': self.get_url(),
             'username': self.username,
             'email': self.email,
-            'orders_url': url_for('api.get_user_orders', id=self.id,
-                                  _external=True)
+            'orders_url': url_for('api.get_user_orders', id=self.id, _external=True),
+            'orders': []
         }
+        for order in self.orders:
+            order_data = {
+                'id': order.id,
+                'status': order.status,
+                'total_amount': order.total_amount,
+                'created_at': order.created_at.isoformat()
+            }
+            user_data['orders'].append(order_data)
+        return user_data
+
+
 
     def import_data(self, data):
         try:
