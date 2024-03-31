@@ -48,8 +48,6 @@ class User(db.Model, UserMixin):
             user_data['orders'].append(order_data)
         return user_data
 
-
-
     def import_data(self, data):
         try:
             self.username = data['username']
@@ -128,7 +126,6 @@ class Product(db.Model):
         db.session.commit()
 
 
-
 class Order(db.Model):
     __tablename__ = "order"
     id = db.Column(db.Integer, primary_key=True)
@@ -139,12 +136,13 @@ class Order(db.Model):
 
     items = db.relationship("OrderItem", backref="order", lazy=True)
 
-
     def __repr__(self):
         return f"<Order id={self.id}, total_amount={self.total_amount}>"
 
+
     def get_total_price(self):
         return sum(item.product.price * item.quantity for item in self.items)
+
 
     def update_status(self, new_status):
         self.status = new_status
@@ -169,6 +167,38 @@ class Order(db.Model):
             item.product.increase_quantity(item.quantity)
         db.session.delete(self)
         db.session.commit()
+
+
+    def import_data(self, data):
+        try:
+            if 'status' in data:
+                self.status = data['status']
+            if 'total_amount' in data:
+                self.total_amount = data['total_amount']
+        except KeyError as e:
+            raise ValidationError('Invalid order: missing ' + e.args[0])
+        return self
+
+
+    def export_data(self):
+        order_data = {
+            'id': self.id,
+            'user_id': self.user_id,
+            'status': self.status,
+            'total_amount': self.total_amount,
+            'created_at': self.created_at.isoformat(),
+            'items': []
+        }
+        for item in self.items:
+            item_data = {
+                'product_id': item.product.id,
+                'quantity': item.quantity,
+                'product_name': item.product.name,
+                'product_price': item.product.price,
+            }
+            order_data['items'].append(item_data)
+        return order_data
+
 
 
 class OrderItem(db.Model):
