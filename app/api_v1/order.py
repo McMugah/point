@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import request
 from . import api
 from ..decorators import json
 from..model import Product, Order, OrderItem
@@ -73,25 +73,6 @@ def add_order_items(id):
     return {}, 201
 
 
-# Route to get details of a specific order item
-@api.route('/orders/<int:order_id>/items/<int:item_id>', methods=['GET'])
-@json
-def get_order_item(order_id, item_id):
-    order_item = OrderItem.query.filter_by(order_id=order_id, id=item_id).first_or_404()
-    return order_item.export_data()
-
-
-# Route to update an order item
-@api.route('/orders/<int:order_id>/items/<int:item_id>', methods=['PATCH'])
-@json
-def update_order_item(order_id, item_id):
-    order_item = OrderItem.query.filter_by(order_id=order_id, id=item_id).first_or_404()
-    data = request.json
-    quantity = data.get('quantity')
-    order_item.update_quantity(quantity)
-    return order_item.export_data()
-
-
 # Route to remove an item from an order
 @api.route('/orders/<int:order_id>/items/<int:item_id>', methods=['DELETE'])
 @json
@@ -124,7 +105,6 @@ def get_order_item(id):
     return order_item.export_data()
 
 
-
 @api.route('/order_items/<int:id>', methods=['PUT'])
 @json
 def update_order_item(id):
@@ -133,11 +113,3 @@ def update_order_item(id):
     order_item.import_data(data)
     db.session.commit()
     return {}, 200
-
-
-@api.route('/order_items/<int:id>', methods=['DELETE'])
-@json
-def delete_order_item(id):
-    order_item = OrderItem.query.get_or_404(id)
-    order_item.cancel()
-    return {}, 204

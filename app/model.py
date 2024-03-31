@@ -208,6 +208,13 @@ class OrderItem(db.Model):
     def __repr__(self):
         return f"<OrderItem {self.id}>"
 
+    def get_url(self):
+        order = Order.query.get(self.order_id)
+        if order:
+            return url_for('api.get_order', id=order.id, _external=True)
+        else:
+            return None 
+
     @classmethod
     def create(cls, order, product, quantity):
         if product.quantity >= quantity:
@@ -257,9 +264,11 @@ class Cart(db.Model):
 
     items = db.relationship("CartItem", backref="cart", lazy=True)
 
-
     def __repr__(self):
         return f"<Cart {self.id}>"
+
+    def get_url(self):
+        return url_for('api.get_cart', id=self.id, _external=True)
 
     def calculate_total_cost(self):
         return sum(item.product.price * item.quantity for item in self.items)
@@ -282,6 +291,34 @@ class Cart(db.Model):
             session.delete(cart_item)
             session.commit()
 
+    def import_data(self, data):
+        try:
+            if 'user_id' in data:
+                self.user_id = data['user_id']
+            if 'created_at' in data:
+                self.created_at = data['created_at']
+        except KeyError as e:
+            raise ValidationError('Invalid cart: missing ' + e.args[0])
+        return self
+
+    def export_data(self):
+        cart_data = {
+            'id': self.id,
+            'user_id': self.user_id,
+            'created_at': self.created_at.isoformat(),
+            'total_cost': self.calculate_total_cost(),
+            'items': []
+        }
+        for item in self.items:
+            item_data = {
+                'product_id': item.product_id,
+                'quantity': item.quantity,
+                'product_name': item.product.name,
+                'product_price': item.product.price,
+            }
+            cart_data['items'].append(item_data)
+        return cart_data
+
 
 class CartItem(db.Model):
     __tablename__ = "cart_item"
@@ -297,6 +334,33 @@ class CartItem(db.Model):
     def price(self):
         return self.product.price if self.product else None
 
+    def get_url(self):
+        return url_for('api.get_cart_item', id=self.id, _external=True)
+
+    def import_data(self, data):
+        try:
+            if 'cart_id' in data:
+                self.cart_id = data['cart_id']
+            if 'product_id' in data:
+                self.product_id = data['product_id']
+            if 'quantity' in data:
+                self.quantity = data['quantity']
+        except KeyError as e:
+            raise ValidationError('Invalid cart item: missing ' + e.args[0])
+        return self
+
+
+    def export_data(self):
+        return {
+            'id': self.id,
+            'cart_id': self.cart_id,
+            'product_id': self.product_id,
+            'quantity': self.quantity,
+            'price': self.price,
+            'total_price': self.price * self.quantity,
+            'url': self.get_url()
+        }
+
 
 class Checkout(db.Model):
     __tablename__ = "checkout"
@@ -310,3 +374,37 @@ class Checkout(db.Model):
 
     def __repr__(self):
         return f"<Checkout {self.id}>"
+
+    def get_url(self):
+        return url_for('api.get_checkout', id=self.id, _external=True)
+
+    def import_data(self, data):
+        try:
+            if 'user_id' in data:
+                self.user_id = data['user_id']
+            if 'order_id' in data:
+                self.order_id = data['order_id']
+            if 'checkout_date' in data:
+                self.checkout_date = data['checkout_date']
+        except KeyError as e:
+            raise ValidationError('Invalid checkout: missing ' + e.args[0])
+        return self
+
+    def export_data(self):
+        user_data = {
+            'id': self.user.id,
+            'username': self.user.username,
+            'email': self.user.email
+        }
+        order_data = {
+            'id': self.order.id,
+            'status': self.order.status,
+            'total_amount': self.order.total_amount
+        }
+        return {
+            'id': self.id,
+            'user': user_data,
+            'order': order_data,
+            'checkout_date': self.checkout_date.isoformat(),
+            'url': self.get_url()
+        }
