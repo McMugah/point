@@ -1,8 +1,7 @@
 import functools
+
 from flask import jsonify
 
-import functools
-from flask import jsonify
 
 def json(f):
     @functools.wraps(f)

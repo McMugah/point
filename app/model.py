@@ -1,10 +1,10 @@
 from datetime import datetime
-from flask_login import UserMixin
+
 from flask import url_for
-from .exceptions import ValidationError
+from flask_login import UserMixin
+
 from . import bcrypt, db, login_manager
-
-
+from .exceptions import ValidationError
 
 
 class User(db.Model, UserMixin):

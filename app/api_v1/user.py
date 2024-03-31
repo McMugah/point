@@ -1,10 +1,11 @@
-from flask import url_for, redirect, request, jsonify, json
-from ..model import User
-from flask_login import current_user, login_user,logout_user,login_required
-from . import api
-from app import db
-from ..decorators import json
+from flask import json, jsonify, redirect, request, url_for
+from flask_login import current_user, login_required, login_user, logout_user
 
+from app import db
+
+from ..decorators import json
+from ..model import User
+from . import api
 
 
 #Registration
